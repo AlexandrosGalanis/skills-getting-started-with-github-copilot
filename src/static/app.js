@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const participantsHtml = details.participants && details.participants.length
           ? `<h5 class="participants-title">Participants <span class="participants-count">${details.participants.length}</span></h5>
              <ul class="participants-list">
-               ${details.participants.map(p => `<li class="participant-item">${p}</li>`).join("")}
+               ${details.participants.map(p => `<li class="participant-item">${p}<button class="delete-btn" data-email="${p}" data-activity="${name}" title="Remove participant" aria-label="Remove ${p}">✕</button></li>`).join("")}
              </ul>`
           : `<p class="participants-empty">No participants yet</p>`;
 
@@ -51,6 +51,36 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error fetching activities:", error);
     }
   }
+
+  // Add event listener for delete buttons (outside fetchActivities to avoid duplicates)
+  activitiesList.addEventListener("click", async (event) => {
+    if (event.target.classList.contains("delete-btn")) {
+      const email = event.target.getAttribute("data-email");
+      const activity = event.target.getAttribute("data-activity");
+      
+      if (confirm(`Are you sure you want to remove ${email} from ${activity}?`)) {
+        try {
+          const response = await fetch(
+            `/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`,
+            {
+              method: "DELETE",
+            }
+          );
+
+          if (response.ok) {
+            // Refresh activities to reflect removal
+            fetchActivities();
+          } else {
+            const result = await response.json();
+            alert(result.detail || "Failed to remove participant");
+          }
+        } catch (error) {
+          alert("Failed to remove participant. Please try again.");
+          console.error("Error removing participant:", error);
+        }
+      }
+    }
+  });
 
   // Handle form submission
   signupForm.addEventListener("submit", async (event) => {
